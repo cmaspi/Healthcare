@@ -22,7 +22,7 @@ def extract_activity_segments(
     return out, labels
 
 
-def one_minute_intervals(df: pd.DataFrame, interval_duration):
+def get_intervals(df: pd.DataFrame, interval_duration: float = 1):
     time_attr = 'Timestamp (ms)'
     target_attr = 'Sample (V)'
     delta = df.iloc[1][time_attr] - df.iloc[0][time_attr]
