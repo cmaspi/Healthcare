@@ -1,6 +1,6 @@
 ## Tasks
 - [ ] write preprocessing code
-  - [ ] extract data corresponding to actvities
+  - [x] extract data corresponding to actvities
   - [ ] segment data into 1 minute intervals
   - [ ] band pass filter
   - [ ] associate the intervals with intended stressor label
