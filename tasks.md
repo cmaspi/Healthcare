@@ -1,0 +1,11 @@
+## Tasks
+- [ ] write preprocessing code
+  - [ ] extract data corresponding to actvities
+  - [ ] segment data into 1 minute intervals
+  - [ ] band pass filter
+  - [ ] associate the intervals with intended stressor label
+  - [ ] associate EMA responses with the data
+  - [ ] Sanity checks
+- [ ] Classification
+  - [ ] implement a model to classify stressful activities
+- [ ] 
