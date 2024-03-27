@@ -1,7 +1,7 @@
-import pandas as pd
 from typing import List, Tuple
+
 import numpy as np
-import os
+import pandas as pd
 
 
 def extract_activity_segments(
@@ -11,11 +11,9 @@ def extract_activity_segments(
                       "Stop Timestamp (ms)"]].to_numpy()
     start, end = start[:, 0], start[:, 1]
     out = []
-    for s, e in zip(start, end):
-        out.append(df_full[df_full["Timestamp (ms)"].between(
-            s, e, inclusive="both")])
     labels = []
-    for activity in df_annot['AnnotationId']:
+
+    for s, e, activity in zip(start, end, df_annot['AnnotationId']):
         if 'tsst' in activity.lower() and 'rest' in activity.lower():
             continue
         if 'cry' in activity.lower():
@@ -24,6 +22,8 @@ def extract_activity_segments(
             labels.append(0)  # rest
         else:
             labels.append(1)  # stressful activity
+        out.append(df_full[df_full["Timestamp (ms)"].between(
+            s, e, inclusive="both")])
     return out, labels
 
 
@@ -88,5 +88,21 @@ def get_ema(df: pd.DataFrame):
 
 
 def get_data(dir: str):
-    pass
-    # for volunteer in os.listdir(dir):
+    df_ema = pd.read_csv(f'{dir}/labeledfeatures.csv')
+    df_annot = pd.read_csv(f'{dir}/annotations.csv')
+    df_full = pd.read_csv(f'{dir}/elec.csv')
+
+    ema_array, activities = get_ema(df_ema)
+    out, labels = extract_activity_segments(df_full, df_annot)
+    intervals = []
+    for df, ema, label, act in zip(out, ema_array, labels, activities):
+        arr = get_intervals(df)
+        n = len(arr)
+        arr = np.concatenate([
+            arr, [ema] * n,
+            np.array([act] * n)[:, None],
+            np.array([label] * n)[:, None]
+        ],
+                             axis=1)
+        intervals.append(arr)
+    return np.concatenate(intervals, axis=0)
