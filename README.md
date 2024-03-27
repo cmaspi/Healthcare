@@ -9,4 +9,6 @@ The data is taken from [here](https://osf.io/4zajm)
 - elec.csv: contains the raw data (timestamp, voltage)
 - In labeledfeatures.csv the ema responses are given but they there are no entries for TSST rest and cry rest. The ema responses are the same for all the cry activities
 
-
+## Additional Details
+- removed P9 because the data doesn't mention event type
+- removed p18 because `labeledfeatures.csv` not present
