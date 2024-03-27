@@ -87,7 +87,7 @@ def get_ema(df: pd.DataFrame):
     return ema_responses, activities
 
 
-def get_data(dir: str):
+def get_data(dir: str, interval_duration: float = 1):
     df_ema = pd.read_csv(f'{dir}/labeledfeatures.csv')
     df_annot = pd.read_csv(f'{dir}/annotations.csv')
     df_full = pd.read_csv(f'{dir}/elec.csv')
@@ -96,7 +96,7 @@ def get_data(dir: str):
     out, labels = extract_activity_segments(df_full, df_annot)
     intervals = []
     for df, ema, label, act in zip(out, ema_array, labels, activities):
-        arr = get_intervals(df)
+        arr = get_intervals(df, interval_duration)
         n = len(arr)
         arr = np.concatenate([
             arr, [ema] * n,
