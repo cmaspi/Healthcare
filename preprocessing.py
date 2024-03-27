@@ -30,7 +30,8 @@ def extract_activity_segments(
 def get_intervals(df: pd.DataFrame, interval_duration: float = 1):
     time_attr = 'Timestamp (ms)'
     target_attr = 'Sample (V)'
-    delta = df.iloc[1][time_attr] - df.iloc[0][time_attr]
+    delta = 4 # fixing to constant because delta can be 5 at some timestamps
+    # these timestamps are rare, so overall it checks out
     interval_length = int(60_000 * interval_duration / delta)
     arr = []
 
