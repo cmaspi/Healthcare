@@ -1,6 +1,7 @@
 import pandas as pd
 from typing import List, Tuple
 import numpy as np
+import os
 
 
 def extract_activity_segments(
@@ -15,6 +16,10 @@ def extract_activity_segments(
             s, e, inclusive="both")])
     labels = []
     for activity in df_annot['AnnotationId']:
+        if 'tsst' in activity.lower() and 'rest' in activity.lower():
+            continue
+        if 'cry' in activity.lower():
+            continue
         if 'rest' in activity.lower():
             labels.append(0)  # rest
         else:
@@ -51,3 +56,37 @@ def get_intervals(df: pd.DataFrame, interval_duration: float = 1):
         arr.append(interval)
     arr = np.array(arr)
     return arr
+
+
+def filter(df: pd.DataFrame):
+    pass
+
+
+def get_ema(df: pd.DataFrame):
+    activities = df[~df['EventType'].isna()]['EventType'].unique()
+    activities = list(activities)
+    activities.remove('InfantCrying')
+    ema_questions = [
+        'Did you experience anything stressful?',
+        'How stressed were you feeling?',
+        'Did you feel you could not control important things?',
+        'Did you feel confident in your ability to handle problems?',
+        'Did you feel things are going your way?',
+        'Did you feel difficulties piling up so you cannot overcome them?',
+        'How happy were you feeling?', 'How excited were you feeling?',
+        'How content were you feeling?', 'How worried were you feeling?',
+        'How irritable/angry were you feeling?', 'How sad were you feeling?',
+        'PSS', 'Induction'
+    ]
+    ema_responses = []
+    for activity in activities:
+        resp = df[df['EventType'] ==
+                  activity].iloc[0][ema_questions].to_numpy()
+        ema_responses.append(resp)
+    ema_responses = np.array(ema_responses)
+    return ema_responses, activities
+
+
+def get_data(dir: str):
+    pass
+    # for volunteer in os.listdir(dir):
