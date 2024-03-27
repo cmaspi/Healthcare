@@ -88,10 +88,10 @@ def get_ema(df: pd.DataFrame):
     return ema_responses, activities
 
 
-def get_data(dir: str, interval_duration: float = 1):
-    df_ema = pd.read_csv(f'{dir}/labeledfeatures.csv')
-    df_annot = pd.read_csv(f'{dir}/annotations.csv')
-    df_full = pd.read_csv(f'{dir}/elec.csv')
+def get_data(path: str, interval_duration: float = 1):
+    df_ema = pd.read_csv(f'{path}/labeledfeatures.csv')
+    df_annot = pd.read_csv(f'{path}/annotations.csv')
+    df_full = pd.read_csv(f'{path}/elec.csv')
 
     ema_array, activities = get_ema(df_ema)
     out, labels = extract_activity_segments(df_full, df_annot)
