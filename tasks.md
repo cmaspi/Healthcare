@@ -3,8 +3,8 @@
   - [x] extract data corresponding to actvities
   - [x] segment data into 1 minute intervals
   - [ ] band pass filter
-  - [ ] associate the intervals with intended stressor label
-  - [ ] associate EMA responses with the data
+  - [x] associate the intervals with intended stressor label
+  - [x] associate EMA responses with the data
   - [ ] Sanity checks
 - [ ] Classification
   - [ ] implement a model to classify stressful activities
