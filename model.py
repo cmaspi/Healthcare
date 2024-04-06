@@ -75,10 +75,10 @@ import tensorflow as tf
 def get_model(input_size):
     inp = layers.Input(shape=(input_size, 1))
     x = layers.Conv1D(4, 3, activation='leaky_relu')(inp)
-    x = layers.BatchNormalization()(x)
+    # x = layers.BatchNormalization()(x)
     x = layers.Conv1D(8, 3, activation='leaky_relu')(x)
     x = layers.Conv1D(16, 3, activation='leaky_relu')(x)
-    x = layers.BatchNormalization()(x)
+    # x = layers.BatchNormalization()(x)
     x = layers.Conv1D(32, 3, activation='leaky_relu')(x)
     x = layers.Conv1D(64, 3, activation='leaky_relu')(x)
     x = layers.Conv1D(128, 3, activation='leaky_relu')(x)
