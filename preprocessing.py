@@ -111,7 +111,7 @@ def get_data(path: str, interval_duration: float = 1):
     return np.concatenate(intervals, axis=0)
 
 
-def get_data_activity_chunks(path: str):
+def get_data_activity_chunks(path: str, sampling: int = 1):
     df_ema = pd.read_csv(f'{path}/labeledfeatures.csv')
     df_annot = pd.read_csv(f'{path}/annotations.csv')
     df_full = pd.read_csv(f'{path}/elec.csv')
@@ -119,5 +119,5 @@ def get_data_activity_chunks(path: str):
 
     ema_array, activities = get_ema(df_ema)
     out, labels = extract_activity_segments(df_full, df_annot)
-    intervals = [df[target_attr].to_numpy() for df in out]
+    intervals = [df[target_attr].to_numpy()[::sampling] for df in out]
     return intervals, ema_array, labels, activities
