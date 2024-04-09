@@ -2,10 +2,17 @@
 - [ ] write preprocessing code
   - [x] extract data corresponding to actvities
   - [x] segment data into 1 minute intervals
-  - [ ] band pass filter
   - [x] associate the intervals with intended stressor label
   - [x] associate EMA responses with the data
-  - [ ] Sanity checks
+  - [x] Sanity checks
+  - [ ] implement functions to generate some hand-crafted features
 - [ ] Classification
-  - [ ] implement a model to classify stressful activities
-- [ ] 
+  - [x] implement a model to classify stressful activities
+  - [ ] Train a model with hand crafted features
+  - [ ] Train a DL + hand crafted feature model
+- [ ] Report
+  - [ ] Plot for ema, intended stressors correlation
+  - [ ] precision, recall, F1 score plots
+  - [ ] finding which features are useful
+  - [ ] finding the best ema
+  - [ ] testing in in-wild data
