@@ -1,12 +1,12 @@
-from preprocessing import *
-import numpy as np
 import os
-from tqdm import tqdm
+import numpy as np
 import tensorflow as tf
-from model import get_model
 import tensorflow.keras as keras
-from sklearn.utils import class_weight
 from sklearn.metrics import precision_score, recall_score, f1_score
+from sklearn.utils import class_weight
+from tqdm import tqdm
+from model import get_model
+from preprocessing import *
 
 
 parent_dir = './Data/In-lab/'
@@ -38,8 +38,10 @@ def calculate_metrics(valX, valY, model_path):
 
 def normalize_data(data, mode):
     """inplace operation"""
+
     def minimum(data):
         return min(min(data, key=lambda x: min(x)))
+
     def maximum(data):
         return max(max(data, key=lambda x: max(x)))
 
@@ -60,24 +62,26 @@ def return_dataset(paths):
     labels_list = []
     ema_list = []
     for path in tqdm(paths):
-        dataX, ema, labels, activities = get_data_activity_chunks(parent_dir+path, sampling=3)
+        dataX, ema, labels, activities = get_data_activity_chunks(parent_dir + path, sampling=3)
         normalize_data(dataX, mode='0-1')
         data.extend(dataX)
         ema_list.append(ema)
         labels_list.append(labels)
         activities_list.append(activities)
 
-    return data, np.concatenate(ema_list, axis=0), np.concatenate(labels_list, axis=0), np.concatenate(activities_list, axis=0)
+    return data, np.concatenate(ema_list, axis=0), np.concatenate(labels_list, axis=0), np.concatenate(activities_list,
+                                                                                                       axis=0)
 
 
 for val_idx in range(len(paths)):
-    training_paths = paths[:val_idx] + paths[val_idx+1:]
-    validation_paths = paths[val_idx: val_idx+1]
+    training_paths = paths[:val_idx] + paths[val_idx + 1:]
+    validation_paths = paths[val_idx: val_idx + 1]
 
-    print('#'*20 + '\n' + f'{val_idx}' + '#'*20)
+    print('#' * 20 + '\n' + f'{val_idx}\n' + '#' * 20)
 
     trainX, trainEMA, trainY, trainActivities = return_dataset(training_paths)
     valX, valEMA, valY, valActivities = return_dataset(validation_paths)
+    print(f'fraction of stressful activities: {trainY.sum()/trainY.size}')
     model = get_model(input_size=None)
 
     model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=5e-4),
@@ -113,13 +117,12 @@ for val_idx in range(len(paths)):
         val_acc = np.mean(val_overall_acc)
         if val_acc > max_vacc:
             max_vacc = val_acc
-            model.save(f"./chkpts/{validation_paths[0]}")
-    
+            model.save(f"./chkpts/LOSO/{model.name}_{validation_paths[0]}")
+
     tf.keras.backend.clear_session()
     del model
 
     # saving metrics
     results = calculate_metrics(valX, valY, validation_paths[0])
-    with open('./Results/loso_1.csv', 'a') as f:
+    with open('./Results/loso_dl.csv', 'a') as f:
         print(f'{validation_paths[0]}, {results["precision"]}, {results["recall"]}, {results["f1"]}', file=f)
-
