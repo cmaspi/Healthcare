@@ -31,8 +31,8 @@ def extract_activity_segments(
             continue
         if 'cry' in activity.lower():
             continue
-        if 'rest' in activity.lower():
-            labels.append(0)  # rest
+        if 'rest' in activity.lower() or 'conversation' in activity.lower() or 'eating' in activity.lower():
+            labels.append(0)  # rest / conversation / eating
         else:
             labels.append(1)  # stressful activity
         out.append(df_full[df_full["Timestamp (ms)"].between(
