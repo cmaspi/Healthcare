@@ -17,5 +17,5 @@ def get_model(input_size):
     x = layers.Dropout(rate=0.1)(x)
     x = layers.Dense(4, activation='leaky_relu')(x)
     x = layers.Dense(1, activation='sigmoid')(x)
-    return tf.keras.Model(inputs=inp, outputs=x)
+    return tf.keras.Model(inputs=inp, outputs=x, name='v1')
 
