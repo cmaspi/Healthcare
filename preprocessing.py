@@ -7,6 +7,19 @@ import pandas as pd
 def extract_activity_segments(
         df_full: pd.DataFrame,
         df_annot: pd.DataFrame) -> Tuple[List[pd.DataFrame], List]:
+    """
+    Parameters
+    ----------
+    df_full: dataframe corresponding to elec.csv
+    df_annot: dataframe corresponding to annotations.csv
+
+    Returns
+    -------
+    Tuple(A, B) where
+    A: List of dataframes corresponding the acitivities,
+    B: numpy array of labels (intended stressors) that is
+    0 for non-stressful and 1 for stressful activities
+    """
     start = df_annot[["Start Timestamp (ms)",
                       "Stop Timestamp (ms)"]].to_numpy()
     start, end = start[:, 0], start[:, 1]
@@ -57,10 +70,6 @@ def get_intervals(df: pd.DataFrame, interval_duration: float = 1):
         arr.append(interval)
     arr = np.array(arr)
     return arr
-
-
-def filter(df: pd.DataFrame):
-    pass
 
 
 def get_ema(df: pd.DataFrame):
