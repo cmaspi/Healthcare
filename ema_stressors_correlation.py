@@ -10,17 +10,15 @@ parent_dir = './Data/In-lab/'
 paths = sorted(os.listdir('./Data/In-lab/'))
 
 df_emas = [pd.read_csv(parent_dir + path + '/labeledfeatures.csv') for path in paths]
-emas_list, activities_list = [], []
-labels_list = []
+emas_list = []
 for df_ema in df_emas:
-    emas, activities = get_ema(df_ema)
-    labels = []
+    emas, _ = get_ema(df_ema)
     emas_list.append(emas.astype(float))
-    activities_list.append(activities)
 
-ema_labels = ['LikertStress',
+
+ema_labels = ['BinaryStress',
+              'LikertStress',
               'PSS-Control',
-              'BinaryStress',
               'PSS-Confident',
               'PSS-Your Way',
               'PSS-Overcome',
@@ -32,6 +30,7 @@ ema_labels = ['LikertStress',
               'SadStress',
               'PSS',
               'Intended']
+
 
 ema_thresh = [np.mean(emas, axis=0) for emas in emas_list]
 pred = [emas >= thresh[None, :] for emas, thresh in zip(emas_list, ema_thresh)]
