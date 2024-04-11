@@ -1,5 +1,5 @@
 from typing import List, Tuple
-
+from skimage.measure import block_reduce
 import numpy as np
 import pandas as pd
 
@@ -31,7 +31,8 @@ def extract_activity_segments(
             continue
         if 'cry' in activity.lower():
             continue
-        if 'rest' in activity.lower() or 'conversation' in activity.lower() or 'eating' in activity.lower():
+        if 'rest' in activity.lower() or 'conversation' in activity.lower(
+        ) or 'eating' in activity.lower():
             labels.append(0)  # rest / conversation / eating
         else:
             labels.append(1)  # stressful activity
@@ -120,6 +121,10 @@ def get_data(path: str, interval_duration: float = 1):
     return np.concatenate(intervals, axis=0)
 
 
+def max_pooling(arr, sampling):
+    return block_reduce(arr, (sampling, ), np.max)
+
+
 def get_data_activity_chunks(path: str, sampling: int = 1):
     df_ema = pd.read_csv(f'{path}/labeledfeatures.csv')
     df_annot = pd.read_csv(f'{path}/annotations.csv')
@@ -128,5 +133,7 @@ def get_data_activity_chunks(path: str, sampling: int = 1):
 
     ema_array, activities = get_ema(df_ema)
     out, labels = extract_activity_segments(df_full, df_annot)
-    intervals = [df[target_attr].to_numpy()[::sampling] for df in out]
+    intervals = [
+        max_pooling(df[target_attr].to_numpy(), sampling) for df in out
+    ]
     return intervals, ema_array, labels, activities
