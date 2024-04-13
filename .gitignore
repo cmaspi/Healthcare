@@ -3,3 +3,5 @@ __pycache__/
 Code/
 .idea/
 logs/
+Pipfile
+Pipfile.lock

@@ -11,7 +11,7 @@ from keras.callbacks import EarlyStopping, ModelCheckpoint, ReduceLROnPlateau
 
 parent_dir = "./Data/In-lab/"
 paths = sorted(list(os.listdir(parent_dir)))
-interval_duration = 0.5
+interval_duration = 2
 vec_size = int(15_000 * interval_duration)
 
 
@@ -40,7 +40,7 @@ def return_dataset(paths):
     return dataX, dataY
 
 
-def train_loso(val_idx):
+def train_loso(val_idx, fine_tune=False):
     training_paths = paths[:val_idx] + paths[val_idx + 1:]
     validation_paths = paths[val_idx:val_idx + 1]
     log_file = open(f'./logs/LOSO/{validation_paths[0]}.txt', 'w')
@@ -55,13 +55,13 @@ def train_loso(val_idx):
     model = get_model_1min(input_size=vec_size)
 
     model.compile(
-        optimizer=tf.keras.optimizers.Adam(learning_rate=5e-3),
+        optimizer=tf.keras.optimizers.Adam(learning_rate=1e-3),
         loss=tf.keras.losses.BinaryCrossentropy(),
         metrics=[
             "accuracy",
             tf.metrics.Precision(),
             tf.metrics.Recall(),
-            tf.keras.metrics.F1Score(threshold=None)
+            tf.keras.metrics.F1Score(threshold=0.5)
         ],
     )
     weights = class_weight.compute_class_weight("balanced",
@@ -70,7 +70,7 @@ def train_loso(val_idx):
     weights = {0: weights[0], 1: weights[1]}
     num_epochs = 100
     earlyStopping = EarlyStopping(monitor='val_loss',
-                                  patience=10,
+                                  patience=25,
                                   verbose=0,
                                   mode='min')
     mcp_save = ModelCheckpoint(
@@ -94,13 +94,52 @@ def train_loso(val_idx):
               batch_size=16,
               verbose=2)
 
+    if fine_tune:
+        positive_indices = np.where(valY == 1)[0]
+        negative_indices = np.where(valY == 0)[0]
+        np.random.shuffle(positive_indices)
+        np.random.shuffle(negative_indices)
+        size_negative = len(negative_indices)
+        size_positive = len(positive_indices)
+        negative_idx_split = int(size_negative * 0.1)
+        positive_idx_split = int(size_positive * 0.1)
+        fine_tune_indices = np.concatenate([
+            positive_indices[:positive_idx_split],
+            negative_indices[:negative_idx_split]
+        ],
+                                           axis=0)
+        val_indices = np.concatenate([
+            positive_indices[positive_idx_split:],
+            negative_indices[negative_idx_split:]
+        ],
+                                     axis=0)
+        fineX, fineY = valX[fine_tune_indices], valY[fine_tune_indices]
+        new_valX, new_valY = valX[val_indices], valY[val_indices]
+
+        model.load_weights(
+            f'./chkpts/LOSO/{model.name}_{validation_paths[0]}.keras')
+        pred = model.predict(valX).reshape((-1, ))  # flattening
+        pred = np.round(pred)
+        results = {}
+        results['precision'] = precision_score(valY, pred)
+        results['recall'] = recall_score(valY, pred)
+        results['f1'] = f1_score(valY, pred)
+        print(results)
+        
+        model.fit(fineX,
+                  fineY,
+                  validation_data=(new_valX, new_valY),
+                  epochs=10,
+                  verbose=2,
+                  class_weight=weights)
+
     # saving metrics
-    pred = model.predict(valX).reshape((-1, ))  # flattening
+    pred = model.predict(new_valX).reshape((-1, ))  # flattening
     pred = np.round(pred)
     results = {}
-    results['precision'] = precision_score(valY, pred)
-    results['recall'] = recall_score(valY, pred)
-    results['f1'] = f1_score(valY, pred)
+    results['precision'] = precision_score(new_valY, pred)
+    results['recall'] = recall_score(new_valY, pred)
+    results['f1'] = f1_score(new_valY, pred)
 
     with open("./Results/loso_dl_corrected_intervals.csv", "a") as f:
         print(
@@ -113,13 +152,13 @@ def train_loso(val_idx):
 
 
 processes = []
-num_parallel_processes = 1
+num_parallel_processes = 2
 for val_idx in range(len(paths)):
     if len(processes) == num_parallel_processes:
         for p in processes:
             p.join()
         processes = []
-    p = Process(target=train_loso, args=(val_idx, ))
+    p = Process(target=train_loso, args=(val_idx, True))
     p.start()
     processes.append(p)
 

@@ -66,7 +66,7 @@ def return_dataset(paths):
     for path in tqdm(paths):
         dataX, ema, labels, activities = get_data_activity_chunks(parent_dir +
                                                                   path,
-                                                                  sampling=5)
+                                                                  sampling=15)
         normalize_data(dataX, mode="0-1")
         data.extend(dataX)
         ema_list.append(ema)
@@ -81,18 +81,37 @@ def return_dataset(paths):
     )
 
 
-def train_loso(val_idx):
+def train_iteration(model, trainX, trainY, valX, valY, weights):
+    overall_loss, overall_acc = [], []
+    for i in range(len(trainX)):
+        dX, dY = trainX[i].reshape((1, -1, 1)), trainY[i:i + 1]
+        loss, acc = model.train_on_batch(dX, dY, class_weight=weights)
+        overall_acc.append(acc)
+        overall_loss.append(loss)
+    print(f"accuracy: {np.mean(overall_acc)}, loss: {np.mean(overall_loss)}")
+
+    predicted = []
+    for i in range(len(valX)):
+        dX, dY = valX[i].reshape((1, ) + valX[i].shape + (1, )), valY[i:i + 1]
+        pred = np.round(model.predict(dX, verbose=0)[0, 0])
+        predicted.append(pred)
+    val_acc = accuracy_score(valY, predicted)
+    val_precision = precision_score(valY, predicted)
+    val_recall = recall_score(valY, predicted)
+    val_f1 = f1_score(valY, predicted)
+    return val_acc, val_precision, val_recall, val_f1
+
+
+def train_loso(val_idx, fine_tune=False):
     training_paths = paths[:val_idx] + paths[val_idx + 1:]
     validation_paths = paths[val_idx:val_idx + 1]
-    log_file = open(f'./logs/LOSO/{validation_paths[0]}.txt', 'w')
 
-    print("#" * 20 + "\n" + f"{val_idx}\n" + "#" * 20, file=log_file)
+    print("#" * 20 + "\n" + f"{val_idx}\n" + "#" * 20)
 
     trainX, trainEMA, trainY, trainActivities = return_dataset(training_paths)
     valX, valEMA, valY, valActivities = return_dataset(validation_paths)
     trainX, trainY = unison_shuffled_copies(trainX, trainY)
-    print(f"fraction of stressful activities: {trainY.sum()/trainY.size}",
-          file=log_file)
+    print(f"fraction of stressful activities: {trainY.sum()/trainY.size}")
     model = get_model(input_size=None)
 
     model.compile(
@@ -107,61 +126,95 @@ def train_loso(val_idx):
     num_epochs = 100
     max_vf1 = -1
     for epoch in tqdm(range(num_epochs)):
-        print(f"Epoch: {epoch + 1}", file=log_file)
-        overall_loss, overall_acc = [], []
-        for i in range(len(trainX)):
-            dX, dY = trainX[i].reshape((1, ) + trainX[i].shape +
-                                       (1, )), trainY[i:i + 1]
-            loss, acc = model.train_on_batch(dX, dY, class_weight=weights)
-            overall_acc.append(acc)
-            overall_loss.append(loss)
-        print(
-            f"accuracy: {np.mean(overall_acc)}, loss: {np.mean(overall_loss)}",
-            file=log_file)
+        print(f"Epoch: {epoch + 1}")
 
-        predicted = []
-        for i in range(len(valX)):
-            dX, dY = valX[i].reshape((1, ) + valX[i].shape + (1, )), valY[i:i +
-                                                                          1]
-            pred = np.round(model.predict(dX, verbose=0)[0, 0])
-            predicted.append(pred)
-        print('predicted:', predicted, file=log_file)
-        val_acc = accuracy_score(valY, predicted)
-        val_precision = precision_score(valY, predicted)
-        val_recall = recall_score(valY, predicted)
-        val_f1 = f1_score(valY, predicted)
+        val_acc, val_precision, val_recall, val_f1 = train_iteration(
+            model, trainX, trainY, valX, valY, weights)
 
         print(
-            f"val accuracy: {val_acc}, val precision: {val_precision}, val recall: {val_recall}, val f1: {val_f1}",
-            file=log_file)
+            f"val accuracy: {val_acc}, val precision: {val_precision}, val recall: {val_recall}, val f1: {val_f1}"
+        )
 
         if val_f1 > max_vf1:
             max_vf1 = val_f1
-            model.save(f"./chkpts/LOSO/{model.name}_{validation_paths[0]}")
+            model.save_weights(
+                f"./chkpts/LOSO/{model.name}_{validation_paths[0]}.keras")
 
-    model_path = f"{model.name}_{validation_paths[0]}"
-    tf.keras.backend.clear_session()
-    del model
+    if fine_tune:
+        positive_indices = np.where(valY == 1)[0]
+        negative_indices = np.where(valY == 0)[0]
+        # np.random.shuffle(positive_indices)
+        # np.random.shuffle(negative_indices)
+        size_negative = len(negative_indices)
+        size_positive = len(positive_indices)
+        negative_idx_split = int(size_negative * 0.3)
+        positive_idx_split = int(size_positive * 0.3)
+        fine_tune_indices = np.concatenate([
+            positive_indices[:positive_idx_split],
+            negative_indices[:negative_idx_split]
+        ],
+                                           axis=0)
+        val_indices = np.concatenate([
+            positive_indices[positive_idx_split:],
+            negative_indices[negative_idx_split:]
+        ],
+                                     axis=0)
+
+        fineX, fineY = [valX[i] for i in fine_tune_indices
+                        ], np.array([valY[i] for i in fine_tune_indices])
+        new_valX, new_valY = [valX[i] for i in val_indices
+                              ], np.array([valY[i] for i in val_indices])
+
+        model.load_weights(
+            f'./chkpts/LOSO/{model.name}_{validation_paths[0]}.keras')
+
+        # fine tuning
+        for epoch in tqdm(range(10)):
+            print(f"Epoch: {epoch + 1}")
+
+            val_acc, val_precision, val_recall, val_f1 = train_iteration(
+                model, fineX, fineY, new_valX, new_valY, weights)
+
+            print(
+                f"val accuracy: {val_acc}, val precision: {val_precision}, val recall: {val_recall}, val f1: {val_f1}"
+            )
+            if val_f1 > max_vf1:
+                max_vf1 = val_f1
+                model.save_weights(
+                    f"./chkpts/LOSO/{model.name}_{validation_paths[0]}.keras")
 
     # saving metrics
-    results = calculate_metrics(valX, valY, model_path)
+    model.load_weights(
+        f"./chkpts/LOSO/{model.name}_{validation_paths[0]}.keras")
+    pred = []
+    for dX in new_valX:
+        dX = dX.reshape((1, -1, 1))
+        pred.append(model.predict(dX)[0, 0])
+    pred = np.round(pred)
+    results = {}
+    results['precision'] = precision_score(new_valY, pred)
+    results['recall'] = recall_score(new_valY, pred)
+    results['f1'] = f1_score(new_valY, pred)
     with open("./Results/loso_dl_corrected.csv", "a") as f:
         print(
             f'{validation_paths[0]}, {results["precision"]}, {results["recall"]}, {results["f1"]}',
             file=f,
         )
-    log_file.close()
+
+    tf.keras.backend.clear_session()
+    del model
 
 
 processes = []
 for val_idx in range(len(paths)):
-    if len(processes) == 4:
+    if len(processes) == 3:
         for p in processes:
             p.join()
         processes = []
-    p = Process(target=train_loso, args=(val_idx, ))
+    p = Process(target=train_loso, args=(val_idx, True))
     p.start()
     processes.append(p)
 
 for p in processes:
     p.join()
+
