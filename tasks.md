@@ -5,14 +5,12 @@
   - [x] associate the intervals with intended stressor label
   - [x] associate EMA responses with the data
   - [x] Sanity checks
-  - [ ] implement functions to generate some hand-crafted features
+  - [x] implement functions to generate some hand-crafted features
 - [ ] Classification
   - [x] implement a model to classify stressful activities
-  - [ ] Train a model with hand crafted features
-  - [ ] Train a DL + hand crafted feature model
+  - [x] Train a model with hand crafted features
 - [ ] Report
-  - [ ] Plot for ema, intended stressors correlation
-  - [ ] precision, recall, F1 score plots
-  - [ ] finding which features are useful
+  - [x] Plot for ema, intended stressors correlation
+  - [x] precision, recall, F1 score plots
   - [ ] finding the best ema
   - [ ] testing in in-wild data
