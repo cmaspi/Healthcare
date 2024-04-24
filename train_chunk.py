@@ -66,7 +66,7 @@ def return_dataset(paths):
     for path in tqdm(paths):
         dataX, ema, labels, activities = get_data_activity_chunks(parent_dir +
                                                                   path,
-                                                                  sampling=15)
+                                                                  sampling=4)
         normalize_data(dataX, mode="0-1")
         data.extend(dataX)
         ema_list.append(ema)
@@ -103,7 +103,7 @@ def train_iteration(model, trainX, trainY, valX, valY, weights):
 def train():
     trainX, trainY = return_dataset(paths)
     trainX, trainY = unison_shuffled_copies(trainX, trainY)
-    trainX, valX, trainY, valY = train_test_split(trainX, trainY)
+    trainX, valX, trainY, valY = train_test_split(trainX, trainY, test_size=0.1)
 
     print(f"fraction of stressful activities: {trainY.sum()/trainY.size}")
     model = get_model(input_size=None)
@@ -131,10 +131,10 @@ def train():
 
         if val_f1 > max_vf1:
             max_vf1 = val_f1
-            model.save_weights(f"./chkpts/{model.name}")
+            model.save_weights(f"./chkpts/{model.name}(2)/")
 
     # Evaluating the final thingy
-    model.load_weights(f"./chkpts/{model.name}")
+    model.load_weights(f"./chkpts/{model.name}(2)/")
     predicted = []
     for i in range(len(valX)):
         dX = valX[i].reshape((1, -1, 1))
