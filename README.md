@@ -1,5 +1,5 @@
 # Micro-EMA
-This repository ...
+Framework to select the optimal micro-EMA question that can be asked multiple times a day, this question has a high correlation with the physiological manifestation.
 
 ## Data description
 The data is taken from [here](https://osf.io/4zajm)
